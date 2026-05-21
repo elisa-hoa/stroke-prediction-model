@@ -4,7 +4,8 @@
 
 This project builds a stroke prediction model using logistic regression in R.
 
-Main steps:
+## Main steps:
+
 Data exploration,
 Data cleaning,
 Missing value handling,
