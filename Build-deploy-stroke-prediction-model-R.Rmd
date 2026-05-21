@@ -1,0 +1,189 @@
+---
+title: "Build and deploy a stroke prediction model using R"
+date: "`r Sys.Date()`"
+output: html_document
+author: "Elisa H"
+---
+
+# About Data Analysis Report
+
+This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains analysis such as data exploration, summary statistics and building the prediction models. The final report was completed on `r date()`. 
+
+**Data Description:**
+
+According to the World Health Organization (WHO) stroke is the 2nd leading cause of death globally, responsible for approximately 11% of total deaths.
+
+This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
+
+
+# Task One: Import data and data preprocessing
+
+## Load data and install packages
+
+```{r}
+#Installer les packages utiles
+install.packages("tidyverse")
+```
+
+
+## Describe and explore the data
+
+```{r}
+#Charger le package
+library(tidyverse)
+
+#Charger les données 
+stroke_data<-read.csv("healthcare-dataset-stroke-data.csv")
+
+#Voir les premières lignes
+head(stroke_data)
+
+#Voir la structure des données
+str(stroke_data)
+
+#Résumé statistique
+summary(stroke_data)
+
+#Vérifier les valeurs manquantes
+colSums(is.na(stroke_data))
+```
+
+
+
+# Task Two: Build prediction models
+
+```{r}
+#Analyse exploratoire des données
+#Vérification des catégories présentes dans les variables qualitatives
+#(genre, statut marital, type de travail, lieu de résidence, tabagisme)
+
+table(stroke_data$gender)
+table(stroke_data$ever_married)
+table(stroke_data$work_type)
+table(stroke_data$Residence_type)
+table(stroke_data$smoking_status)
+
+#Corriger la colonne BMI
+unique(stroke_data$bmi)[1:20]
+
+
+#La variable BMI contient des valeurs "N/A" stockées comme du texte.
+#On les convertit en vraies valeurs manquantes (NA) puis on transforme
+#la colonne BMI en variable numérique afin qu'elle puisse être utilisée
+#dans un modèle de machine learning.
+stroke_data$bmi[stroke_data$bmi=="N/A"]<-NA
+stroke_data$bmi<-as.numeric(stroke_data$bmi)
+sum(is.na(stroke_data$bmi))
+str(stroke_data$bmi)
+
+#Conversion des variables catégorielles en facteurs
+stroke_data$gender<-as.factor(stroke_data$gender)
+stroke_data$ever_married<-as.factor(stroke_data$ever_married)
+stroke_data$work_type<-as.factor(stroke_data$work_type)
+stroke_data$Residence_type<-as.factor(stroke_data$Residence_type)
+stroke_data$smoking_status<-as.factor(stroke_data$smoking_status)
+stroke_data$stroke<-as.factor(stroke_data$stroke)
+
+#Vérification
+str(stroke_data)
+
+#Suppression des lignes contenant des valeurs manquantes
+stroke_data_clean<-na.omit(stroke_data)
+
+#Vérification
+dim(stroke_data_clean)
+
+#Construction d'un modèle de régression logistique
+model<-glm(stroke~age+hypertension+heart_disease+avg_glucose_level+bmi, data=stroke_data_clean, family="binomial")
+summary(model)
+```
+
+
+
+# Task Three: Evaluate and select prediction models
+
+```{r}
+#Génération des probabilités prédites
+pred_prob<-predict(model, newdata=stroke_data_clean, type="response")
+
+#Aperçu des probabilités prédites
+head(pred_prob)
+
+#Conversion en classes 0/1
+pred_class<-ifelse(pred_prob>0.5,1,0)
+
+#Matrice de confusion
+table(Réel=stroke_data_clean$stroke, Prédit=pred_class)
+```
+
+
+
+# Task Four: Deploy the prediction model
+
+```{r}
+#Exemple de nouveau patient
+new_patient<-data.frame(age=65, hypertension=1, heart_disease=0, avg_glucose_level=150, bmi=30)
+
+#Probabilité prédite
+predict(model, newdata=new_patient, type="response")
+
+#Le modèle estime une probabilité d'AVC de 11,73%
+#pour un patient de 65 ans souffrant d'hypertension, 
+#avec un taux de glucose moyen de 150 et un BMI de 30.
+
+```
+
+
+
+# Task Five: Findings and Conclusions
+
+
+Les données relatives aux patients ont été chargées, explorées et préparées pour l'analyse.
+
+Les valeurs manquantes de la variable BMI ont été converties en valeurs manquantes réelles (NA) puis supprimées afin de garantir la qualité des données utilisées pour l'entraînement du modèle.
+
+Les variables catégorielles ont été converties en facteurs afin d'être correctement interprétées par les algorithmes de machine learning.
+
+Un modèle de régression logistique a ensuite été construit pour prédire la probabilité d'occurrence d'un AVC à partir de plusieurs caractéristiques médicales :
+-l'âge
+-l'hypertension
+-les maladies cardiaques
+-le niveau moyen de glucose
+-l'indice de masse corporelle (BMI)
+
+L'analyse a montré que : 
+-l'âge est le facteur le plus fortement associé au risque d'AVC
+-l'hypertension augmente significativement le risque
+-les maladies cardiaques augmentent également la probabilité d'AVC
+-un niveau élevé de glucose est associé à un risque plus important
+-le BMI n'est pas statistiquement significatif dans ce modèle.
+
+Le modèle a enfin été utilisé pour prédire le risque d'AVC d'un patient fictif et a estimé une probabilité d'environ 11,7%.
+
+Une limite de cette étude est le déséquilibre des classes du jeu de données ; en effet, les cas d'AVC étant relativement rares, le modèle tend à prédire majoritairement l'absence d'AVC.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
